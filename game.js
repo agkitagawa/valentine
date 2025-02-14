@@ -4,19 +4,6 @@ let isPaused = false;
 
 const TITLE_HEIGHT = 100;
 
-const config = {
-    type: Phaser.AUTO,
-    width: window.innerWidth - 20,
-    height: window.innerHeight - TITLE_HEIGHT,
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
-};
-
-const game = new Phaser.Game(config);
-
 let ducky;
 let wug;
 let artemis;
@@ -25,6 +12,7 @@ let cursors;
 let keys;
 let winImage;
 let pauseImage;
+let pauseText;
 
 function preload() {
     this.load.image('background', 'imgs/background.jpg');
@@ -40,6 +28,77 @@ function preload() {
     this.load.image('ducky_artemis', 'imgs/ducky_artemis.jpg');
 }
 
+class MenuScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'MenuScene' });
+    }
+
+    preload() {
+        this.load.image('background', 'imgs/background.jpg');
+    }
+
+    create() {
+        this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(this.sys.game.config.width, this.sys.game.config.height);
+
+        const titleText = this.add.text(this.sys.game.config.width / 2, 100, 'Heart Adventure', {
+            fontSize: '64px',
+            fill: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const singlePlayerButton = this.add.text(this.sys.game.config.width / 2, 300, 'Single Player', {
+            fontSize: '32px',
+            fill: '#ffffff',
+            backgroundColor: '#6c6765',
+            padding: { left: 20, right: 20, top: 10, bottom: 10 }
+        }).setOrigin(0.5).setInteractive();
+
+        const multiplayerButton = this.add.text(this.sys.game.config.width / 2, 400, 'Multiplayer', {
+            fontSize: '32px',
+            fill: '#ffffff',
+            backgroundColor: '#6c6765',
+            padding: { left: 20, right: 20, top: 10, bottom: 10 }
+        }).setOrigin(0.5).setInteractive();
+
+        singlePlayerButton.on('pointerdown', () => {
+            multiplayerMode = false;
+            this.scene.start('GameScene');
+        });
+
+        multiplayerButton.on('pointerdown', () => {
+            multiplayerMode = true;
+            this.scene.start('GameScene');
+        });
+    }
+}
+
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'GameScene' });
+    }
+
+    preload() {
+        preload.call(this);
+    }
+
+    create() {
+        create.call(this);
+    }
+
+    update() {
+        update.call(this);
+    }
+}
+
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth - 20,
+    height: window.innerHeight - TITLE_HEIGHT,
+    scene: [MenuScene, GameScene],
+};
+
+const game = new Phaser.Game(config);
+
 function create() {
     this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(this.sys.game.config.width, this.sys.game.config.height);
 
@@ -50,7 +109,7 @@ function create() {
     wug = this.add.image(500, 300, 'wug');
     wug.setOrigin(0.5, 0.5);
     wug.setDisplaySize(75, 75);
-    wug.setVisible(false);
+    wug.setVisible(multiplayerMode);
 
     heart = this.add.image(200, 200, 'heart');
     heart.setOrigin(0.5, 0.5);
@@ -61,25 +120,50 @@ function create() {
     artemis.setDisplaySize(30, 30);
     artemis.speed = 1;
 
+    const menuButton = this.add.text(this.sys.game.config.width - 120, 20, 'Menu', {
+            fontSize: '24px',
+            fill: '#ffffff',
+            backgroundColor: '#6c6765',
+            padding: { left: 10, right: 10, top: 5, bottom: 5 }
+        })
+        .setInteractive()
+        .setOrigin(0)
+        .on('pointerdown', () => {
+            this.scene.start('MenuScene');
+    });    
+
     cursors = this.input.keyboard.createCursorKeys();
     keys = this.input.keyboard.addKeys({
         up: 'W',
         left: 'A',
         down: 'S',
-        right: 'D'
+        right: 'D',
+        space: 'SPACE'
     });
 
-    this.input.keyboard.on('keydown-M', toggleMultiplayer);
+    pauseText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'PAUSED', {
+        fontSize: '64px',
+        fill: '#6c6765',
+        fontStyle: 'bold'
+    });
+    pauseText.setOrigin(0.5);
+    pauseText.setVisible(false);
+
+    this.input.keyboard.on('keydown-SPACE', () => {
+        isPaused = !isPaused;
+        console.log(`Game ${isPaused ? 'paused' : 'resumed'}`);
+
+        pauseText.setVisible(isPaused);
+    });
 }
 
-function toggleMultiplayer() {
-    multiplayerMode = !multiplayerMode;
-    console.log(`Multiplayer mode: ${multiplayerMode ? 'ON' : 'OFF'}`);
 
+function toggleMultiplayer() {
     if (multiplayerMode) {
-        wug.setVisible(true);
+        wug.setVisible(!wug.visible);
+        console.log(`Wug visibility toggled: ${wug.visible}`);
     } else {
-        wug.setVisible(false);
+        console.log("Cannot toggle Wug; multiplayer mode is not active.");
     }
 }
 
